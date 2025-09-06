@@ -22,9 +22,13 @@ type Action struct {
 	str string
 }
 
+func (a Action) act() {
+	fmt.Println("Hey, I have my own method!")
+}
+
 func main() {
 
-	acy := Action{
+	act := Action{
 		Human: Human{
 			name:    "Ananda",
 			age:     20,
@@ -34,9 +38,11 @@ func main() {
 		str: "act",
 	}
 	//вызываем метод напрямую
-	fmt.Println("Acy act:", acy.SayHello())
+	fmt.Println("Acy act:", act.SayHello())
 
 	//прописываем полный путь для метода
-	fmt.Println("Also acy str:", acy.Human.SayHello())
+	fmt.Println("Also acy str:", act.Human.SayHello())
 
+	//метод act() есть только у Action. Например human.act() выдаст ошибку.
+	act.act()
 }
