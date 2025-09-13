@@ -39,7 +39,7 @@ func main() {
 	}
 	close(jobs)
 	//выводим данные из канала
-	for i := 0; i < n; i++ {
+	for i := 0; i < 2*n; i++ {
 		s := <-results
 		fmt.Println(s)
 	}
