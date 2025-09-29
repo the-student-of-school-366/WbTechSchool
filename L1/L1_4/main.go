@@ -1,44 +1,51 @@
 package main
 
 import (
+	"context"
 	"fmt"
+	"os"
+	"os/signal"
 	"sync"
+	"syscall"
 	"time"
 )
 
-// worker принимает из канала ввода число, выводит его в консоль, имитирует работу
-func worker(id int, jobs <-chan int, wg *sync.WaitGroup) {
+func worker(ctx context.Context, wg *sync.WaitGroup) {
+	fmt.Println("Before start")
 	defer wg.Done()
-	for j := range jobs {
-		fmt.Println("worker", id, "выел:", j)
-		time.Sleep(time.Second)
-
+	select {
+	case <-ctx.Done():
+		fmt.Println("Worker ended")
+		return
+	default:
+		fmt.Println("Worker started")
+		time.Sleep(1 * time.Second)
 	}
+
 }
 
 func main() {
 
+	// Создаем канал для получения сигналов
+	fmt.Println("Program started")
+	sigChan := make(chan os.Signal, 1)
+	signal.Notify(sigChan, os.Interrupt, syscall.SIGTERM)
 	wg := new(sync.WaitGroup)
 
-	fmt.Println("Введите число горутин-воркеров:")
-	var n int
-	_, err := fmt.Scan(&n)
-	if err != nil {
-		fmt.Println(err)
-	}
-	//создаем буферизированный канал
-	jobs := make(chan int, 100)
-
-	//запускаем n воркеров
-	for i := 0; i < n; i++ {
+	ctx, cancel := context.WithCancel(context.Background())
+	for i := 0; i < 5; i++ {
 		wg.Add(1)
-		go worker(i, jobs, wg)
+		go worker(ctx, wg)
 	}
 
-	//записываем данные в канал
-	for i := 1; i <= n; i++ {
-		jobs <- i
-	}
-	close(jobs)
+	// Блокируемся до получения сигнала
+	go func() {
+		sig := <-sigChan
+		fmt.Printf("\nПолучен сигнал: %v\n", sig)
+		fmt.Println("Завершаю программу...")
+		cancel()
+	}()
+
 	wg.Wait()
+	fmt.Println("Program ended")
 }
