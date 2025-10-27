@@ -1,22 +1,45 @@
 package main
 
-//доделаю, простите, сейчас завал по учебе
 import (
 	"fmt"
 	"sync"
 	"time"
 )
 
-// worker принимает из канала ввода число, выводит его в консоль, имитирует работу
-func worker(id int, jobs <-chan int, wg *sync.WaitGroup) {
-	defer wg.Done()
-	for j := range jobs {
-		fmt.Println("worker", id, "выел:", j)
-		time.Sleep(time.Second)
+type myMap struct {
+	mu sync.RWMutex
+	m  map[int]int
+}
 
-	}
+func NewMyMap() *myMap {
+	return &myMap{m: make(map[int]int)}
+}
+
+func (myMap *myMap) Set(key int, value int) {
+	myMap.mu.Lock()
+	myMap.m[key] = value
+	myMap.mu.Unlock()
+}
+func (myMap *myMap) Get(key int) int {
+	myMap.mu.RLock()
+	defer myMap.mu.RUnlock()
+	return myMap.m[key]
 }
 
 func main() {
-
+	mapa := NewMyMap()
+	mapa.Set(1, 1)
+	wg := sync.WaitGroup{}
+	for i := 0; i < 15; i++ {
+		wg.Add(1)
+		go func(i int) {
+			mapa.Set(i, i)
+			time.Sleep(time.Millisecond * 100)
+			value := mapa.Get(i)
+			fmt.Printf("Goroutine %d: got value %d\n", i, value)
+			wg.Done()
+		}(i)
+	}
+	wg.Wait()
+	fmt.Println("Completed")
 }
