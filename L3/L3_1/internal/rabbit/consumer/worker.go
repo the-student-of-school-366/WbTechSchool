@@ -12,6 +12,34 @@ func failOnError(err error, msg string) {
 	}
 }
 
+type Consumer struct {
+	conn *amqp.Connection
+	ch   *amqp.Channel
+	q    amqp.Queue
+}
+
+func NewConsumer(conn *amqp.Connection) (*Consumer, error) {
+	chann, err := conn.Channel()
+	if err != nil {
+		failOnError(err, "Failed to open a channel")
+		return nil, err
+	}
+
+	q, err := chann.QueueDeclare(
+		"",    // name
+		false, // durability
+		false, // delete when unused
+		true,  // exclusive
+		false, // no-wait
+		nil,   // arguments
+	)
+
+	return &Consumer{
+		conn: conn,
+		ch:   chann,
+		q:    q,
+	}, nil
+}
 func main() {
 	conn, err := amqp.Dial("amqp://guest:guest@localhost:5672/")
 	failOnError(err, "Failed to connect to RabbitMQ")
